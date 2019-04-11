@@ -21,7 +21,7 @@ interface PackageInfo {
     name: string,
     version: string,
     description: string,
-    author: string,
+    author?: string,
     homepage?: string,
     installers?: Entry[]
 };
@@ -62,7 +62,7 @@ async function import_zipped_package(owner: string, filename: string) {
         name: info.name,
         version: info.version,
         description: info.description,
-        author: info.author,
+        author: owner,
         compat_win: false,
         compat_mac: false,
         compat_linux: false,

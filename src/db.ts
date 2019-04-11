@@ -4,12 +4,13 @@ import * as bcrypt from 'bcrypt';
 // Schema and model definitions
 
 const PackageSchema = new mongoose.Schema({
+    /* Required */
     id: { type: String, unique: true, required: true, validate: /^[a-zA-Z0-9_\-]+$/ },
+    // author must point User.userame
+    author: { type: String, required: true },
     // displayed name, short description
     name: { type: String, index: true, required: true },
     description: { type: String, required: true },
-    // author must point User.userame
-    author: { type: String, required: true },
     // latest version
     version: { type: String, required: true },
     // long description
