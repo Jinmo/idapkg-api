@@ -14,7 +14,8 @@ const app = new Koa();
 const _ = new KoaRouter();
 
 const multerInstance = multer({ dest: 'uploads' })
-const ALLOWED_ORIGIN = 'https://idapkg.com'
+// const ALLOWED_ORIGIN = 'https://idapkg.com'
+const ALLOWED_ORIGIN = undefined;
 
 _.get('/search', async (ctx: any) => {
     const { q } = ctx.query;

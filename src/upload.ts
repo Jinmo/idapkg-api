@@ -23,30 +23,10 @@ interface PackageInfo {
     description: string,
     author: string,
     homepage?: string,
-    plugins?: Entry[],
-    loaders?: Entry[],
-    procssors?: Entry[],
     installers?: Entry[]
 };
 
 function select_entry(entries: Entry[], current_os?: string) {
-    if (current_os)
-        entries = entries.filter((item: Entry) => {
-            let os: string[];
-            if (item.os === '*' || item.os == null)
-                return true;
-
-            if (item.os instanceof String) {
-                os = [<string>item.os];
-            } else {
-                os = <string[]>item.os;
-            }
-
-            let positive = os.filter(x => x[0] !== '!');
-            let negative = os.filter(x => x[0] === '!');
-
-            return positive.indexOf(current_os) !== -1 && negative.indexOf(current_os) === -1;
-        });
     return entries;
 }
 
@@ -89,10 +69,6 @@ async function import_zipped_package(owner: string, filename: string) {
         readme: (await z.get('README.md')).toString('utf-8'),
         metadata: info
     };
-
-    if (owner !== info.author) {
-        return { success: false, error: 'author does not match with logged-in user' }
-    }
 
     const entries = (info.plugins || []).concat(info.processors || []).concat(info.loaders || []);
 
