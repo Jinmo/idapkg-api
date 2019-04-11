@@ -27,6 +27,7 @@ const PackageSchema = new mongoose.Schema({
 const ReleaseSchema = new mongoose.Schema({
     package: {type: mongoose.Schema.Types.ObjectId, ref: 'Package'},
     version: {type: String, required: true},
+    spec: {type: String, required: true},
     createdAt: {
         type: Date,
         default: Date.now
@@ -82,6 +83,6 @@ db.once('open', () => {
     console.info("MongoDB connected!");
 })
 
-mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true });
+mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
 
 export { Package, User, Release, db };

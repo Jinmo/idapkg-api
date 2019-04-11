@@ -70,10 +70,8 @@ async function import_zipped_package(owner: string, filename: string) {
         metadata: info
     };
 
-    const entries = (info.plugins || []).concat(info.processors || []).concat(info.loaders || []);
-
     ['win', 'mac', 'linux'].forEach((os: string) => {
-        data['compat_' + os] = select_entry(entries, os).length !== 0;
+        data['compat_' + os] = !!select_entry(data, os);
     })
 
     try {
@@ -96,7 +94,7 @@ async function import_zipped_package(owner: string, filename: string) {
         if(!package_id) {
             return {success: false, error: "internal server error: package id not found"}
         }
-        await (new Release({ package: package_id, version: data.version })).save()
+        await (new Release({ package: package_id, version: data.version, spec: 'any' })).save()
 
         // try to save and unlink temporary file
         await storage.put(data.id, data.version, await fs.promises.readFile(filename))

@@ -2,7 +2,7 @@ import { Package, db } from './db';
 import { readdir, lstatSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
-import {PackageInfo, select_entry} from './upload'
+import {PackageInfo} from './upload'
 
 const PACKAGE_BASE = process.argv[2];
 
@@ -77,7 +77,7 @@ readdir(PACKAGE_BASE, async (err, files) => {
             };
 
             ['win', 'mac', 'linux'].forEach((os: string) => {
-                data['compat_' + os] = select_entry(info.plugins || [], os).length !== 0;
+                data['compat_' + os] = false;
             })
 
             return data

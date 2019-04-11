@@ -74,9 +74,6 @@ const PACKAGE_SCHEMA: Schema = {
             "title": "The Version Schema",
             "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[\\da-z-]+(?:\\.[\\da-z-]+)*)?(?:\\+[\\da-z-]+(?:\\.[\\da-z-]+)*)?$"
         },
-        "plugins": { "$ref": "#/definitions/entry" },
-        "processors": { "$ref": "#/definitions/entry" },
-        "loaders": { "$ref": "#/definitions/entry" },
         "installers": { "$ref": "#/definitions/entry" },
         "description": {
             "type": "string",
