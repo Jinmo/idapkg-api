@@ -9,7 +9,9 @@
       "strict": true,
       "noImplicitAny": true,
       "strictNullChecks": true,
-      "allowSyntheticDefaultImports": true
+      "allowSyntheticDefaultImports": true,
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true
     },
     "include": [
       "src/**/*.ts"

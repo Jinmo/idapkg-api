@@ -1,6 +1,7 @@
 //@ts-check
 import * as Koa from 'koa';
 import * as KoaRouter from 'koa-router';
+import * as AsyncLock from 'async-lock';
 import * as bodyParser from 'koa-bodyparser';
 import * as cors from '@koa/cors';
 import * as session from 'koa-session';
@@ -16,6 +17,13 @@ const _ = new KoaRouter();
 const multerInstance = multer({ dest: 'uploads' })
 // const ALLOWED_ORIGIN = 'https://idapkg.com'
 const ALLOWED_ORIGIN = undefined;
+
+enum Locks {
+    Package,
+    Release
+};
+
+const lock = new AsyncLock();
 
 _.get('/search', async (ctx: any) => {
     const { q } = ctx.query;
@@ -100,7 +108,7 @@ _.get('/user/packages', async (ctx: any) => {
 
     if (user) {
         const pkgs = await Package.find({ author: username })
-        ctx.body = { success: true, data: pkgs }
+        ctx.body = { success: true, data: {packages: pkgs, createdAt: user.createdAt} }
     }
     else {
         ctx.body = { success: false, error: 'User not found' }
@@ -129,7 +137,10 @@ _.post('/upload', async (ctx: any, next: any) => {
         }
     }
     await multerInstance.single('file')(ctx, next)
-    ctx.body = await import_zipped_package(ctx.session.username, ctx.req.file.path)
+
+    await lock.acquire(['package', 'release'], async () => {
+        ctx.body = await import_zipped_package(ctx.session.username, ctx.req.file.path)
+    })
 })
 
 const error = (ctx: any, data: any) => {

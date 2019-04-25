@@ -1,81 +1,92 @@
+import {Typegoose, Ref, prop, pre, instanceMethod, index} from 'typegoose';
 import * as mongoose from 'mongoose';
 import * as bcrypt from 'bcrypt';
 
-// Schema and model definitions
-
-const PackageSchema = new mongoose.Schema({
-    /* Required */
-    id: { type: String, unique: true, required: true, validate: /^[a-zA-Z0-9_\-]+$/ },
-    // author must point User.userame
-    author: { type: String, required: true },
-    // displayed name, short description
-    name: { type: String, index: true, required: true },
-    description: { type: String, required: true },
-    // latest version
-    version: { type: String, required: true },
-    // long description
-    readme: String,
-    // indexing for compatibility searching
-    compat_win: Boolean,
-    compat_linux: Boolean,
-    compat_mac: Boolean,
-    // info.json
-    metadata: { type: Object, default: {} }
-});
+// Schema definitions
 
 // PackageSchema only refers latest version
+class Package extends Typegoose{
+    @prop({ unique: true, required: true, validate: /^[a-zA-Z0-9_\-]+$/ })
+    id?: string;
+
+    // author must point User.userame
+    @prop({ required: true })
+    author?: string;
+
+    @prop({ index: true, required: true })
+    name?: string;
+
+    @prop({ required: true })
+    description?: string;
+
+    // <id, version> must point Release<.package, .version>
+    @prop({ required: true })
+    version?: string;
+
+    // README.md
+    @prop()
+    readme?: string
+
+    // info.json
+    @prop({ default: {} })
+    metadata?: object
+};
+
 // ReleaseSchema stores all versions
-const ReleaseSchema = new mongoose.Schema({
-    package: {type: mongoose.Schema.Types.ObjectId, ref: 'Package'},
-    version: {type: String, required: true},
-    spec: {type: String, required: true},
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-})
+@index({package: 1, version: 1})
+class Release extends Typegoose {
+    @prop()
+    package?: Ref<Package>
 
-const SALT_WORK_FACTOR = 10;
+    @prop({required: true})
+    version?: string
 
-const UserSchema = new mongoose.Schema({
-    username: { type: String, required: true, unique: true, validate: /^[a-zA-Z0-9._\-]{5,}$/ },
-    password: { type: String, required: true, validate: /^.{8,}$/ },
-    email: {type: String, required: true, validate: /@/},
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-});
+    @prop({default: Date.now})
+    createdAt?: Date
 
-UserSchema.pre('save', function(next: any) {
+    // Currently there is no metadata since I think that Release <-> File storage should be 1:1 matching.
+}
+
+@pre<User>('save', async function(next: any) {
+    const SALT_WORK_FACTOR = 10;
+
     var user: any = this;
 
     if (!user.isModified('password')) return next();
 
-    bcrypt.genSalt(SALT_WORK_FACTOR, (err, salt) => {
-        if (err) return next(err);
+    try {
+        const salt = await bcrypt.genSalt(SALT_WORK_FACTOR)
+        const hash = await bcrypt.hash(user.password, salt)
 
-        bcrypt.hash(user.password, salt, (err, hash) => {
-            if (err) return next(err);
-
-            user.password = hash;
-            next();
-        })
-    })
+        user.password = hash;
+        next();
+    } catch(e) {
+        next(e);
+    }
 })
+class User extends Typegoose{
+    @prop({required: true, unique: true, validate: /^[a-zA-Z0-9._\-]{2,}$/ })
+    username?: string;
 
-UserSchema.methods.comparePassword = function(candidatePassword: string) {
-    return new Promise(resolve => {
-        bcrypt.compare(candidatePassword, this.password, function(err, isMatch) {
-            if (err) throw err;
-            resolve(isMatch);
-        });
-    })
+    @prop({required: true, validate: /^.{8,}$/ })
+    password?: string;
+
+    @prop({required: true, validate: /@/})
+    email?: string;
+
+    @prop({default: Date.now})
+    createdAt?: Date;
+
+    @instanceMethod
+    comparePassword(this: InstanceType<any>, candidatePassword: string) {
+        return new Promise(resolve => {
+            bcrypt.compare(candidatePassword, this.password, function(err, isMatch) {
+                if (err) throw err;
+                resolve(isMatch);
+            });
+        })
+    };
 };
-
-const Package = mongoose.model('Package', PackageSchema);
-const User = mongoose.model('User', UserSchema);
-const Release = mongoose.model('Release', ReleaseSchema);
 
 // Connect to database
 const db = mongoose.connection;
@@ -86,4 +97,8 @@ db.once('open', () => {
 
 mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
 
-export { Package, User, Release, db };
+const PackageModel = new Package().getModelForClass(Package)
+const UserModel = new User().getModelForClass(User)
+const ReleaseModel = new Release().getModelForClass(Release)
+
+export { PackageModel as Package, UserModel as User, ReleaseModel as Release, db };

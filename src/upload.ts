@@ -1,6 +1,7 @@
 import { promisify } from 'util'
 import * as child_process from 'child_process'
 import * as which from 'which'
+import * as semver from 'semver';
 import * as fs from 'fs'
 import { Validator, ValidatorResult, validate } from 'jsonschema';
 import * as storage from './storage'
@@ -30,31 +31,42 @@ function select_entry(entries: Entry[], current_os?: string) {
     return entries;
 }
 
-// This class wraps zipfile in python
+// Python based ZIP processor
 class ZipReader {
     zip_path: string
     constructor(filename: string) {
         this.zip_path = filename
     }
     async get(filename: string): Promise<Buffer> {
-        const { stdout } = await execFile(PYTHON_EXECUTABLE, ['zipextract.py', this.zip_path, filename], { encoding: 'buffer' })
+        const { stdout } = await execFile(PYTHON_EXECUTABLE, ['zip-processor.py', 'extract', this.zip_path, filename], { encoding: 'buffer' })
         return stdout
     }
-}
 
-function validate_info(info: any): ValidatorResult {
-    const v = new Validator()
-    return v.validate(info, PACKAGE_SCHEMA)
+    async existsMany(filenames: string[]): Promise<boolean> {
+        const { stdout } = await execFile(PYTHON_EXECUTABLE, ['zip-processor.py', 'existsMany', this.zip_path, ...filenames], { encoding: 'buffer' })
+        return parseInt(stdout.toString('utf-8')) === filenames.length;
+    }
 }
 
 async function import_zipped_package(owner: string, filename: string) {
     const z = new ZipReader(filename)
     const info = JSON.parse((await z.get('info.json')).toString('utf-8'))
 
-    const res = validate_info(info)
+    // Validate info.json
+    const v = new Validator()
+    const res = v.validate(info, PACKAGE_SCHEMA)
 
     if (!res.valid) {
         return { success: false, error: "info.json validation error:\n  " + res.errors.map(x => x.toString()).join('\n  ') }
+    }
+
+    // Additional validation
+    if (!semver.valid(info.version)) {
+        return { success: false, error: "info.json validation error:\n  version field is not valid: see semver.org" }
+    }
+
+    if (info.installers && !z.existsMany(info.installers)) {
+        return { success: false, error: "info.json validation error:\n  one or more items in installers field do not exist" }
     }
 
     const data: any = {
@@ -63,27 +75,37 @@ async function import_zipped_package(owner: string, filename: string) {
         version: info.version,
         description: info.description,
         author: owner,
-        compat_win: false,
-        compat_mac: false,
-        compat_linux: false,
         readme: (await z.get('README.md')).toString('utf-8'),
         metadata: info
     };
-
-    ['win', 'mac', 'linux'].forEach((os: string) => {
-        data['compat_' + os] = !!select_entry(data, os);
-    })
 
     try {
         const existing: any = await Package.findOne({ id: info._id })
         let package_id = null;
 
         if (existing) {
-            // TODO: check if package with version exists
+            if (existing.author !== owner) {
+                return { success: false, error: 'same package id with different owner exists' }
+            }
+
+            const releases = await Release.find({ package: existing.id })
+            for (const release of releases) {
+                if (semver.eq(<string>release.version, info.version)) {
+                    // exact match
+                    await release.remove();
+                    break;
+                }
+                if (semver.gt(<string>release.version, info.version)) {
+                    return { success: false, error: `Uploaded package\'s version should be greater than or equal with latest one of existing versions. Latest version in this repo: ${release.version} ; Uploaded version: ${info.version}` }
+                }
+            }
+
+            // Update fields
             Object.assign(existing, data)
+
             const item: any = await Package.findOneAndUpdate({ id: info._id }, data, { upsert: false })
-            if(!item) {
-                return {success: false, error: 'internal server error'};
+            if (!item) {
+                return { success: false, error: 'internal server error' };
             }
             package_id = item._id;
         } else {
@@ -91,10 +113,13 @@ async function import_zipped_package(owner: string, filename: string) {
             const res = await pkg.save()
             package_id = res._id;
         }
-        if(!package_id) {
-            return {success: false, error: "internal server error: package id not found"}
+
+        if (!package_id) {
+            return { success: false, error: "internal server error: package id not found" }
         }
-        await (new Release({ package: package_id, version: data.version, spec: 'any' })).save()
+
+        // Save release
+        await (new Release({ package: package_id, version: data.version })).save()
 
         // try to save and unlink temporary file
         await storage.put(data.id, data.version, await fs.promises.readFile(filename))
