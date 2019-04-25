@@ -1,13 +1,13 @@
 import zipfile
 import sys
 
-if sys.argv[1] === 'extract':
+if sys.argv[1] == 'extract':
     z = zipfile.ZipFile(sys.argv[2])
     try:
         sys.stdout.write(z.read(sys.argv[3]))
     except:
         sys.stdout.write('')
-if sys.argv[1] === 'existsMany':
+if sys.argv[1] == 'existsMany':
     z = zipfile.ZipFile(sys.argv[2])
     namelist = z.namelist()
     sys.stdout.write(
