@@ -119,7 +119,7 @@ async function import_zipped_package(owner: string, filename: string) {
             }
             package_id = item._id;
         } else {
-            const pkg = new Package({ ...data, createdAt: data.updateAt })
+            const pkg = new Package({ ...data, createdAt: data.updatedAt })
             const res = await pkg.save()
             package_id = res._id;
         }
