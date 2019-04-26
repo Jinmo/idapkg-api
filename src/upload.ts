@@ -7,16 +7,10 @@ import { Validator, ValidatorResult, validate } from 'jsonschema';
 import * as storage from './storage'
 import { Package, Release } from './db';
 import PACKAGE_SCHEMA from './package-schema';
+import { Timestamp } from 'bson';
 
 const execFile = promisify(child_process.execFile)
 const PYTHON_EXECUTABLE = which.sync('python');
-
-interface Entry {
-    path: string,
-    os?: string | string[],
-    ida_version?: string,
-    ea?: number[]
-};
 
 interface PackageInfo {
     name: string,
@@ -24,12 +18,18 @@ interface PackageInfo {
     description: string,
     author?: string,
     homepage?: string,
-    installers?: Entry[]
+    installers?: string[],
+    tags?: string[]
 };
 
-function select_entry(entries: Entry[], current_os?: string) {
-    return entries;
-}
+enum Attributes {
+    procs = 'procs',
+    loaders = 'loaders',
+    plugins = 'plugins',
+    til = 'til',
+    sig = 'sig',
+    ids = 'ids'
+};
 
 // Python based ZIP processor
 class ZipReader {
@@ -46,6 +46,10 @@ class ZipReader {
         const { stdout } = await execFile(PYTHON_EXECUTABLE, ['zip-processor.py', 'existsMany', this.zip_path, ...filenames], { encoding: 'buffer' })
         return parseInt(stdout.toString('utf-8')) === filenames.length;
     }
+    async attributes(): Promise<Attributes[]> {
+        const { stdout } = await execFile(PYTHON_EXECUTABLE, ['zip-processor.py', 'attributes', this.zip_path], { encoding: 'buffer' })
+        return JSON.parse(stdout.toString('utf-8'));
+    }
 }
 
 async function import_zipped_package(owner: string, filename: string) {
@@ -61,13 +65,17 @@ async function import_zipped_package(owner: string, filename: string) {
     }
 
     // Additional validation
+    // 1. version string check
     if (!semver.valid(info.version)) {
         return { success: false, error: "info.json validation error:\n  version field is not valid: see semver.org" }
     }
 
+    // 2. installers check
     if (info.installers && !z.existsMany(info.installers)) {
         return { success: false, error: "info.json validation error:\n  one or more items in installers field do not exist" }
     }
+
+    const attr: string[] = await z.attributes()
 
     const data: any = {
         id: info._id,
@@ -76,7 +84,9 @@ async function import_zipped_package(owner: string, filename: string) {
         description: info.description,
         author: owner,
         readme: (await z.get('README.md')).toString('utf-8'),
-        metadata: info
+        metadata: info,
+        tags: attr.concat(info.tags || []),
+        updatedAt: Date.now()
     };
 
     try {
@@ -91,7 +101,7 @@ async function import_zipped_package(owner: string, filename: string) {
             const releases = await Release.find({ package: existing.id })
             for (const release of releases) {
                 if (semver.eq(<string>release.version, info.version)) {
-                    // exact match
+                    // exact match, let's replace this release
                     await release.remove();
                     break;
                 }
@@ -109,19 +119,20 @@ async function import_zipped_package(owner: string, filename: string) {
             }
             package_id = item._id;
         } else {
-            const pkg = new Package(data)
+            const pkg = new Package({ ...data, createdAt: data.updateAt })
             const res = await pkg.save()
             package_id = res._id;
         }
 
         if (!package_id) {
+            // This should not happen
             return { success: false, error: "internal server error: package id not found" }
         }
 
         // Save release
         await (new Release({ package: package_id, version: data.version })).save()
 
-        // try to save and unlink temporary file
+        // Try to save and unlink temporary file
         await storage.put(data.id, data.version, await fs.promises.readFile(filename))
         await fs.promises.unlink(filename)
 
@@ -131,4 +142,4 @@ async function import_zipped_package(owner: string, filename: string) {
     }
 }
 
-export { PackageInfo, select_entry, Entry, import_zipped_package }
+export { PackageInfo, import_zipped_package }

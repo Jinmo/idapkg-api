@@ -27,6 +27,7 @@ const PACKAGE_SCHEMA: Schema = {
             "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[\\da-z-]+(?:\\.[\\da-z-]+)*)?(?:\\+[\\da-z-]+(?:\\.[\\da-z-]+)*)?$"
         },
         "installers": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
         "description": {
             "type": "string",
             "title": "The Description Schema",

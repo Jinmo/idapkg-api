@@ -70,15 +70,8 @@ readdir(PACKAGE_BASE, async (err, files) => {
                 version: info.version,
                 description: info.description,
                 author: info.author,
-                compat_win: false,
-                compat_mac: false,
-                compat_linux: false,
                 readme: file.readme()
             };
-
-            ['win', 'mac', 'linux'].forEach((os: string) => {
-                data['compat_' + os] = false;
-            })
 
             return data
         }))
