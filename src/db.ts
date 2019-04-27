@@ -27,7 +27,7 @@ class Package extends Typegoose {
     readme?: string
 
     @arrayProp({ items: String })
-    tags?: string[]
+    keywords?: string[]
 
     // info.json
     @prop({ default: {} })

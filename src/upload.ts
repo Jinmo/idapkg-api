@@ -19,7 +19,7 @@ interface PackageInfo {
     author?: string,
     homepage?: string,
     installers?: string[],
-    tags?: string[]
+    keywords?: string[]
 };
 
 enum Attributes {
@@ -85,7 +85,7 @@ async function import_zipped_package(owner: string, filename: string) {
         author: owner,
         readme: (await z.get('README.md')).toString('utf-8'),
         metadata: info,
-        tags: attr.concat(info.tags || []),
+        keywords: attr.concat(info.keywords || []),
         updatedAt: Date.now()
     };
 
