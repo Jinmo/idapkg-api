@@ -3,11 +3,10 @@ import * as child_process from 'child_process'
 import * as which from 'which'
 import * as semver from 'semver';
 import * as fs from 'fs'
-import { Validator, ValidatorResult, validate } from 'jsonschema';
+import { Validator } from 'jsonschema';
 import * as storage from './storage'
 import { Package, Release } from './db';
 import PACKAGE_SCHEMA from './package-schema';
-import { Timestamp } from 'bson';
 
 const execFile = promisify(child_process.execFile)
 const PYTHON_EXECUTABLE = which.sync('python');

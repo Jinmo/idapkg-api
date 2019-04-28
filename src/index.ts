@@ -27,7 +27,7 @@ const lock = new AsyncLock();
 
 _.get('/search', async (ctx: any) => {
     const { q } = ctx.query;
-    const arr = await Package.find({ name: new RegExp(q, 'i') }, 'name id version compat_win compat_mac compat_linux author description -_id');
+    const arr = await Package.find({ name: new RegExp(q, 'i') }, 'name id version compat_win compat_mac compat_linux author description keywords -_id');
 
     ctx.body = { success: true, data: arr };
 });
@@ -108,7 +108,7 @@ _.get('/user/packages', async (ctx: any) => {
 
     if (user) {
         const pkgs = await Package.find({ author: username })
-        ctx.body = { success: true, data: {packages: pkgs, createdAt: user.createdAt} }
+        ctx.body = { success: true, data: { packages: pkgs, createdAt: user.createdAt } }
     }
     else {
         ctx.body = { success: false, error: 'User not found' }
@@ -144,7 +144,7 @@ _.post('/upload', async (ctx: any, next: any) => {
 })
 
 const error = (ctx: any, data: any) => {
-    if(data.success === false) {
+    if (data.success === false) {
         ctx.set("X-Error", data.error)
         ctx.status = 404
     } else {
@@ -175,18 +175,18 @@ _.get('/download', async (ctx: any) => {
         Object.assign(query, { version: version_spec });
 
     const pkg = await Package.findOne({ id: name })
-    if(!pkg) {
+    if (!pkg) {
         console.info(name)
-        return error(ctx, {success: false, error: 'Package is empty'})
+        return error(ctx, { success: false, error: 'Package is empty' })
     }
 
     Object.assign(query, { package: pkg._id })
     const item: any = await Release.findOne(query).sort('-createdAt')
     if (item) {
-        return error(ctx, {success: true, redirect: (await storage.get(name, item.version))})
+        return error(ctx, { success: true, redirect: (await storage.get(name, item.version)) })
     }
 
-    return error(ctx, {success: false, error: "Release empty"})
+    return error(ctx, { success: false, error: "Release empty" })
 })
 
 app.keys = [crypto.randomBytes(32).toString('hex')];

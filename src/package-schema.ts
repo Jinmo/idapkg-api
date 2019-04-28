@@ -37,6 +37,15 @@ const PACKAGE_SCHEMA: Schema = {
             "type": "string",
             "title": "The Homepage Schema",
             "pattern": "^(.*)$"
+        },
+        "dependencies": {
+            "type": "object",
+            "patternProperties": {
+                "^[a-zA-Z0-9\\-][a-zA-Z0-9_\\-]{3,214}$": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
         }
     }
 }
