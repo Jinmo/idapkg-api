@@ -10,6 +10,7 @@ import * as crypto from 'crypto';
 import { Package, User, Release } from './db';
 import { import_zipped_package } from './upload';
 import * as storage from './storage'
+import PACKAGE_SCHEMA from './package-schema';
 
 const app = new Koa();
 const _ = new KoaRouter();
@@ -46,13 +47,6 @@ _.get('/info', async (ctx: any) => {
     } else {
         ctx.body = { success: true, data: item };
     }
-});
-
-_.get('/plugins', async (ctx: any) => {
-    const { id } = ctx.query;
-    const arr = await Package.find({}, 'id name version -_id');
-
-    ctx.body = { success: true, data: arr };
 });
 
 // User-related endpoints
@@ -187,6 +181,10 @@ _.get('/download', async (ctx: any) => {
     }
 
     return error(ctx, { success: false, error: "Release empty" })
+})
+
+_.get('/schema', async (ctx: any) => {
+    ctx.body = PACKAGE_SCHEMA;
 })
 
 app.keys = [crypto.randomBytes(32).toString('hex')];

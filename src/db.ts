@@ -18,6 +18,9 @@ class Package extends Typegoose {
     @prop({ required: true })
     description?: string;
 
+    @prop()
+    homepage?: string;
+
     // <id, version> must point Release<.package, .version>
     @prop({ required: true })
     version?: string;

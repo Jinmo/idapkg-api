@@ -1,4 +1,5 @@
 import * as AWS from 'aws-sdk';
+import { Readable } from 'stream';
 
 const CONFIG = {
     region: 'ap-northeast-2',
@@ -11,7 +12,7 @@ const s3 = new AWS.S3({
     credentials: CONFIG.credentials
 })
 
-async function put(name: string, version: string, value: Buffer): Promise<void> {
+async function put(name: string, version: string, value: Buffer|Readable): Promise<void> {
     const key = `${name}==${version}.zip`
     await s3.putObject({
         Key: key,

@@ -18,7 +18,8 @@ interface PackageInfo {
     author?: string,
     homepage?: string,
     installers?: string[],
-    keywords?: string[]
+    keywords?: string[],
+    dependencies?: object
 };
 
 enum Attributes {
@@ -36,17 +37,24 @@ class ZipReader {
     constructor(filename: string) {
         this.zip_path = filename
     }
+
+    invoke(args: string[]) {
+        return execFile(PYTHON_EXECUTABLE,
+            ['zip-processor.py', ...args], { encoding: 'buffer' })
+    }
+
     async get(filename: string): Promise<Buffer> {
-        const { stdout } = await execFile(PYTHON_EXECUTABLE, ['zip-processor.py', 'extract', this.zip_path, filename], { encoding: 'buffer' })
+        const { stdout } = await this.invoke(['extract', this.zip_path, filename])
         return stdout
     }
 
     async existsMany(filenames: string[]): Promise<boolean> {
-        const { stdout } = await execFile(PYTHON_EXECUTABLE, ['zip-processor.py', 'existsMany', this.zip_path, ...filenames], { encoding: 'buffer' })
+        const { stdout } = await this.invoke(['existsMany', this.zip_path, ...filenames])
         return parseInt(stdout.toString('utf-8')) === filenames.length;
     }
-    async attributes(): Promise<Attributes[]> {
-        const { stdout } = await execFile(PYTHON_EXECUTABLE, ['zip-processor.py', 'attributes', this.zip_path], { encoding: 'buffer' })
+
+    async attributes(): Promise<(Attributes | string)[]> {
+        const { stdout } = await this.invoke(['attributes', this.zip_path])
         return JSON.parse(stdout.toString('utf-8'));
     }
 }
@@ -74,13 +82,14 @@ async function import_zipped_package(owner: string, filename: string) {
         return { success: false, error: "info.json validation error:\n  one or more items in installers field do not exist" }
     }
 
-    const attr: string[] = await z.attributes()
+    const attr = await z.attributes()
 
     const data: any = {
         id: info._id,
         name: info.name,
         version: info.version,
         description: info.description,
+        homepage: info.homepage,
         author: owner,
         readme: (await z.get('README.md')).toString('utf-8'),
         metadata: info,
@@ -132,7 +141,7 @@ async function import_zipped_package(owner: string, filename: string) {
         await (new Release({ package: package_id, version: data.version })).save()
 
         // Try to save and unlink temporary file
-        await storage.put(data.id, data.version, await fs.promises.readFile(filename))
+        await storage.put(data.id, data.version, fs.createReadStream(filename))
         await fs.promises.unlink(filename)
 
         return { success: true, data: data }

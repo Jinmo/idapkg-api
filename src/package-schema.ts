@@ -19,15 +19,21 @@ const PACKAGE_SCHEMA: Schema = {
         "name": {
             "type": "string",
             "title": "The Name Schema",
-            "pattern": "^(.*)$"
+            "pattern": "^[^\\s].*[^\\s]$"
         },
         "version": {
             "type": "string",
             "title": "The Version Schema",
             "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[\\da-z-]+(?:\\.[\\da-z-]+)*)?(?:\\+[\\da-z-]+(?:\\.[\\da-z-]+)*)?$"
         },
-        "installers": { "type": "array", "items": { "type": "string" } },
-        "keywords": { "type": "array", "items": { "type": "string", "pattern": "^[\\w-_.]+$" }, "uniqueItems": true },
+        "installers": {
+            "type": "array", "items": { "type": "string" }
+        },
+        "keywords": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[\\w-_.]+$" },
+            "uniqueItems": true
+        },
         "description": {
             "type": "string",
             "title": "The Description Schema",
@@ -36,7 +42,7 @@ const PACKAGE_SCHEMA: Schema = {
         "homepage": {
             "type": "string",
             "title": "The Homepage Schema",
-            "pattern": "^(.*)$"
+            "pattern": "^http(s)?:\/\/[^\\s]*$"
         },
         "dependencies": {
             "type": "object",
