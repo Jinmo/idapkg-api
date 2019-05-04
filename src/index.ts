@@ -165,7 +165,7 @@ _.get('/download', async (ctx: any) => {
         return error(ctx, { success: false, error: 'version is empty' })
     }
 
-    if (version_spec)
+    if (version_spec && version_spec !== '*')
         Object.assign(query, { version: version_spec });
 
     const pkg = await Package.findOne({ id: name })
