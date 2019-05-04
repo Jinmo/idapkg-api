@@ -171,7 +171,7 @@ _.get('/download', async (ctx: any) => {
     const pkg = await Package.findOne({ id: name })
     if (!pkg) {
         console.info(name)
-        return error(ctx, { success: false, error: 'Package is empty' })
+        return error(ctx, { success: false, error: 'Package not found' })
     }
 
     Object.assign(query, { package: pkg._id })
@@ -181,6 +181,20 @@ _.get('/download', async (ctx: any) => {
     }
 
     return error(ctx, { success: false, error: "Release empty" })
+})
+
+_.get('/releases', async (ctx: any) => {
+    const { name } = ctx.query
+
+    const pkg = await Package.findOne({ id: name })
+    if (!pkg) {
+        ctx.body = { success: false, error: 'Package not found' }
+        return
+    }
+
+    const releases = await Release.find({ package: pkg._id }, 'version -_id')
+        .sort('createdAt')
+    ctx.body = { success: true, data: releases }
 })
 
 _.get('/schema', async (ctx: any) => {
