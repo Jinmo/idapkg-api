@@ -12,12 +12,15 @@ const execFile = promisify(child_process.execFile)
 const PYTHON_EXECUTABLE = which.sync('python');
 
 interface PackageInfo {
+    _id: string,
     name: string,
     version: string,
     description: string,
     author?: string,
     homepage?: string,
     installers?: string[],
+    uninstallers?: string[],
+    restart_required?: boolean,
     keywords?: string[],
     dependencies?: object
 };
@@ -61,7 +64,7 @@ class ZipReader {
 
 async function import_zipped_package(owner: string, filename: string) {
     const z = new ZipReader(filename)
-    const info = JSON.parse((await z.get('info.json')).toString('utf-8'))
+    const info: PackageInfo = JSON.parse((await z.get('info.json')).toString('utf-8'))
 
     // Validate info.json
     const v = new Validator()
@@ -80,6 +83,11 @@ async function import_zipped_package(owner: string, filename: string) {
     // 2. installers check
     if (info.installers && !z.existsMany(info.installers)) {
         return { success: false, error: "info.json validation error:\n  one or more items in installers field do not exist" }
+    }
+
+    // 3. uninstallers check
+    if (info.uninstallers && !z.existsMany(info.uninstallers)) {
+        return { success: false, error: "info.json validation error:\n  one or more items in uninstallers field do not exist" }
     }
 
     const attr = await z.attributes()

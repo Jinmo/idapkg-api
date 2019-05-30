@@ -9,6 +9,7 @@ if sys.argv[1] == 'extract':
         sys.stdout.write(z.read(sys.argv[3]))
     except:
         sys.stdout.write('')
+
 elif sys.argv[1] == 'existsMany':
     z = zipfile.ZipFile(sys.argv[2])
     names = z.namelist()

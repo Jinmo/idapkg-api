@@ -29,6 +29,12 @@ const PACKAGE_SCHEMA: Schema = {
         "installers": {
             "type": "array", "items": { "type": "string" }
         },
+        "uninstallers": {
+            "type": "array", "items": { "type": "string" }
+        },
+        "restart_required": {
+            "type": "boolean"
+        },
         "keywords": {
             "type": "array",
             "items": { "type": "string", "pattern": "^[\\w-_.]+$" },
