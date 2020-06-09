@@ -5,7 +5,7 @@ import * as AsyncLock from 'async-lock';
 import * as bodyParser from 'koa-bodyparser';
 import * as cors from '@koa/cors';
 import * as session from 'koa-session';
-import * as multer from 'koa-multer';
+import * as multer from '@koa/multer';
 import * as crypto from 'crypto';
 import { Package, User, Release } from './db';
 import { import_zipped_package } from './upload';

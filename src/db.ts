@@ -1,10 +1,10 @@
-import { Typegoose, Ref, prop, pre, instanceMethod, index, arrayProp } from 'typegoose';
+import { Ref, prop, pre, index, arrayProp, getModelForClass } from '@typegoose/typegoose';
 import * as mongoose from 'mongoose';
 import * as bcrypt from 'bcrypt';
 
 // Schema definitions
 // PackageSchema only refers latest version
-class Package extends Typegoose {
+class Package {
     @prop({ unique: true, required: true, validate: /^[a-zA-Z0-9_\-]+$/ })
     id?: string;
 
@@ -29,7 +29,7 @@ class Package extends Typegoose {
     @prop()
     readme?: string
 
-    @arrayProp({ items: String })
+    @prop()
     keywords?: string[]
 
     // info.json
@@ -45,7 +45,7 @@ class Package extends Typegoose {
 
 // ReleaseSchema stores all versions
 @index({ package: 1, version: 1 })
-class Release extends Typegoose {
+class Release {
     @prop()
     package?: Ref<Package>
 
@@ -76,7 +76,7 @@ class Release extends Typegoose {
         next(e);
     }
 })
-class User extends Typegoose {
+class User {
     @prop({ required: true, unique: true, validate: /^[a-zA-Z0-9._\-]{2,}$/ })
     username?: string;
 
@@ -89,7 +89,6 @@ class User extends Typegoose {
     @prop({ default: Date.now })
     createdAt?: Date;
 
-    @instanceMethod
     comparePassword(this: InstanceType<any>, candidatePassword: string) {
         return new Promise(resolve => {
             bcrypt.compare(candidatePassword, this.password, function (err, isMatch) {
@@ -105,10 +104,10 @@ const db = mongoose.connection;
 
 db.once('open', () => console.info("MongoDB connected!"))
 
-mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true });
+mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true, useUnifiedTopology: true });
 
-const PackageModel = new Package().getModelForClass(Package)
-const UserModel = new User().getModelForClass(User)
-const ReleaseModel = new Release().getModelForClass(Release)
+const PackageModel = getModelForClass(Package)
+const UserModel = getModelForClass(User)
+const ReleaseModel = getModelForClass(Release)
 
 export { PackageModel as Package, UserModel as User, ReleaseModel as Release, db };
