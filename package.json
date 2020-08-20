@@ -16,7 +16,7 @@
     "@yarnpkg/pnpify": "^2.0.0-rc.23",
     "async-lock": "^1.2.0",
     "aws-sdk": "^2.434.0",
-    "bcrypt": "^3.0.5",
+    "bcrypt": "^5.0.0",
     "jsonschema": "^1.2.4",
     "koa": "^2.7.0",
     "koa-bodyparser": "^4.2.1",
